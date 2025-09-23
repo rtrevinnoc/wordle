@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Wordle</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #fafafa;
+      color: #222;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: start;
+      height: 100vh;
+      margin: 0;
+      padding-top: 2rem;
+    }
+    h1 {
+      margin-bottom: 1rem;
+    }
+    #board {
+      display: grid;
+      grid-template-rows: repeat(6, 1fr);
+      gap: 5px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(5, 50px);
+      gap: 5px;
+    }
+    .cell {
+      width: 50px;
+      height: 50px;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      text-transform: uppercase;
+      font-weight: bold;
+      background: #fff;
+    }
+    .correct {
+      background: #6aaa64;
+      color: #fff;
+      border: none;
+    }
+    .present {
+      background: #c9b458;
+      color: #fff;
+      border: none;
+    }
+    .absent {
+      background: #787c7e;
+      color: #fff;
+      border: none;
+    }
+    #message {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+    }
+    #username {
+      position: fixed;
+      top: 5px;
+      right: 10px;
+      font-size: 0.8rem;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mini Wordle</h1>
+  <div id="username"></div>
+  <div id="board"></div>
+  <div id="message"></div>
+
+  <script>
+    const WORD = "APPLE";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxYqC90N6y11Wb_aUb3okokcJzF3L8t7T9_dAdVTG-2rB9OvF9JpX27NcJCMipd8X1B/exec"; // Google Apps Script URL
+
+    const board = document.getElementById("board");
+    const message = document.getElementById("message");
+    const usernameBox = document.getElementById("username");
+
+    // Cookie handling
+    function getCookie(name) {
+      let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? match[2] : null;
+    }
+    function setCookie(name, value, days) {
+      let d = new Date();
+      d.setTime(d.getTime() + (days*24*60*60*1000));
+      document.cookie = `${name}=${value};expires=${d.toUTCString()};path=/`;
+    }
+
+    let username = getCookie("username");
+    if (!username) {
+      username = prompt("Enter your username:") || "Guest";
+      setCookie("username", username, 365);
+    }
+    usernameBox.textContent = username;
+
+    const rows = 6, cols = 5;
+    let currentRow = 0, currentCol = 0;
+    let grid = [];
+
+    for (let r = 0; r < rows; r++) {
+      const rowDiv = document.createElement("div");
+      rowDiv.className = "row";
+      let rowCells = [];
+      for (let c = 0; c < cols; c++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        rowDiv.appendChild(cell);
+        rowCells.push(cell);
+      }
+      board.appendChild(rowDiv);
+      grid.push(rowCells);
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (message.textContent.includes("won") || message.textContent.includes("lost")) return;
+
+      if (/^[a-zA-Z]$/.test(e.key) && currentCol < cols) {
+        grid[currentRow][currentCol].textContent = e.key.toUpperCase();
+        currentCol++;
+      } else if (e.key === "Backspace" && currentCol > 0) {
+        currentCol--;
+        grid[currentRow][currentCol].textContent = "";
+      } else if (e.key === "Enter" && currentCol === cols) {
+        checkWord();
+      }
+    });
+
+    async function submitScore(score) {
+      await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({ username, score })
+      });
+      loadLeaderboard();
+    }
+
+    function checkWord() {
+      let guess = "";
+      for (let c = 0; c < cols; c++) {
+        guess += grid[currentRow][c].textContent;
+      }
+      if (guess.length < cols) return;
+
+      let solution = WORD.split("");
+      let guessArr = guess.split("");
+
+      for (let c = 0; c < cols; c++) {
+        if (guessArr[c] === solution[c]) {
+          grid[currentRow][c].classList.add("correct");
+          solution[c] = null;
+          guessArr[c] = null;
+        }
+      }
+
+      for (let c = 0; c < cols; c++) {
+        if (guessArr[c] && solution.includes(guessArr[c])) {
+          grid[currentRow][c].classList.add("present");
+          solution[solution.indexOf(guessArr[c])] = null;
+        } else if (guessArr[c]) {
+          grid[currentRow][c].classList.add("absent");
+        }
+      }
+
+      if (guess === WORD) {
+        message.textContent = "You won!";
+        submitScore(6 - currentRow); // higher score = fewer rows used
+      } else if (currentRow === rows - 1) {
+        message.textContent = "You lost! Word was " + WORD;
+        submitScore(0);
+      } else {
+        currentRow++;
+        currentCol = 0;
+      }
+    }
+
+    async function loadLeaderboard() {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      let html = "<h3>Leaderboard</h3><ol>";
+      data.slice(-10).reverse().forEach(entry => {
+        html += `<li>${entry.username} - ${entry.score}</li>`;
+      });
+      html += "</ol>";
+      message.innerHTML = message.textContent + html;
+    }
+
+    loadLeaderboard();
+  </script>
+</body>
+</html>
