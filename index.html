@@ -132,6 +132,20 @@
     }
 
     if (isMobile) {
+      // Focus hidden input at the start
+      hiddenInput.focus();
+
+      hiddenInput.addEventListener("keydown", (e) => {
+        if (e.key === "Backspace" && currentCol > 0) {
+          currentCol--;
+          grid[currentRow][currentCol].textContent = "";
+          e.preventDefault(); // prevent going back in browser
+        } else if (e.key === "Enter" && currentCol === cols) {
+          checkWord();
+          e.preventDefault();
+        }
+      });
+
       hiddenInput.addEventListener("input", (e) => {
         const val = e.target.value;
         if (val && /^[a-zA-Z]$/.test(val) && currentCol < cols) {
@@ -139,6 +153,9 @@
           currentCol++;
         }
         e.target.value = ""; // clear for next char
+
+        // refocus to keep keyboard open
+        setTimeout(() => hiddenInput.focus(), 0);
       });
     } else {
       document.addEventListener("keydown", (e) => {
