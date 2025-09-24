@@ -200,6 +200,10 @@
       } else {
         currentRow++;
         currentCol = 0;
+
+        if (isMobile) {
+          setTimeout(() => hiddenInput.focus(), 50);
+        }
       }
     }
 
