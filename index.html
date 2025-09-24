@@ -86,6 +86,7 @@
     const message = document.getElementById("message");
     const usernameBox = document.getElementById("username");
     const hiddenInput = document.getElementById("hiddenInput");
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
     // Cookie handling
     function getCookie(name) {
@@ -130,28 +131,30 @@
       grid.push(rowCells);
     }
 
-    hiddenInput.addEventListener("input", (e) => {
-      const val = e.target.value;
-      if (val && /^[a-zA-Z]$/.test(val) && currentCol < cols) {
-        grid[currentRow][currentCol].textContent = val.toUpperCase();
-        currentCol++;
-      }
-      e.target.value = ""; // clear for next char
-    });
+    if (isMobile) {
+      hiddenInput.addEventListener("input", (e) => {
+        const val = e.target.value;
+        if (val && /^[a-zA-Z]$/.test(val) && currentCol < cols) {
+          grid[currentRow][currentCol].textContent = val.toUpperCase();
+          currentCol++;
+        }
+        e.target.value = ""; // clear for next char
+      });
+    } else {
+      document.addEventListener("keydown", (e) => {
+        if (message.textContent.includes("won") || message.textContent.includes("lost")) return;
 
-    document.addEventListener("keydown", (e) => {
-      if (message.textContent.includes("won") || message.textContent.includes("lost")) return;
-
-      if (/^[a-zA-Z]$/.test(e.key) && currentCol < cols) {
-        grid[currentRow][currentCol].textContent = e.key.toUpperCase();
-        currentCol++;
-      } else if (e.key === "Backspace" && currentCol > 0) {
-        currentCol--;
-        grid[currentRow][currentCol].textContent = "";
-      } else if (e.key === "Enter" && currentCol === cols) {
-        checkWord();
-      }
-    });
+        if (/^[a-zA-Z]$/.test(e.key) && currentCol < cols) {
+          grid[currentRow][currentCol].textContent = e.key.toUpperCase();
+          currentCol++;
+        } else if (e.key === "Backspace" && currentCol > 0) {
+          currentCol--;
+          grid[currentRow][currentCol].textContent = "";
+        } else if (e.key === "Enter" && currentCol === cols) {
+          checkWord();
+        }
+      });
+    }
 
     async function submitScore(score) {
       await fetch(API_URL, {
