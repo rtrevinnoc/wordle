@@ -74,6 +74,8 @@
   <h1>Mini Wordle</h1>
   <div id="username"></div>
   <div id="board"></div>
+  <input id="hiddenInput" type="text" maxlength="1"
+         style="opacity:0;position:absolute;left:-9999px;" />
   <div id="message"></div>
 
   <script>
@@ -83,6 +85,7 @@
     const board = document.getElementById("board");
     const message = document.getElementById("message");
     const usernameBox = document.getElementById("username");
+    const hiddenInput = document.getElementById("hiddenInput");
 
     // Cookie handling
     function getCookie(name) {
@@ -113,12 +116,28 @@
       for (let c = 0; c < cols; c++) {
         const cell = document.createElement("div");
         cell.className = "cell";
+
+        if (r === 0 && c === 0) {
+          cell.addEventListener("click", () => {
+            hiddenInput.focus(); // shows native keyboard on mobile
+          });
+        }
+
         rowDiv.appendChild(cell);
         rowCells.push(cell);
       }
       board.appendChild(rowDiv);
       grid.push(rowCells);
     }
+
+    hiddenInput.addEventListener("input", (e) => {
+      const val = e.target.value;
+      if (val && /^[a-zA-Z]$/.test(val) && currentCol < cols) {
+        grid[currentRow][currentCol].textContent = val.toUpperCase();
+        currentCol++;
+      }
+      e.target.value = ""; // clear for next char
+    });
 
     document.addEventListener("keydown", (e) => {
       if (message.textContent.includes("won") || message.textContent.includes("lost")) return;
