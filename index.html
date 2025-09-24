@@ -80,6 +80,26 @@
       50% { box-shadow: 0 0 15px #007bff; }
       100% { box-shadow: 0 0 5px #007bff; }
     }
+
+    .tooltip {
+      position: absolute;
+      background: #007bff;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -150%);
+      transition: opacity 0.3s, transform 0.3s;
+      z-index: 10;
+    }
+
+    .tooltip.show {
+      opacity: 1;
+      transform: translate(-50%, -120%);
+    }
   </style>
 </head>
 <body>
@@ -132,8 +152,18 @@
 
         if (r === 0 && c === 0) {
           cell.classList.add("first-cell");
+
+          // Create tooltip
+          const tooltip = document.createElement("div");
+          tooltip.className = "tooltip show";
+          tooltip.textContent = "Click here to start";
+          cell.style.position = "relative"; // for positioning
+          cell.appendChild(tooltip);
+
           cell.addEventListener("click", () => {
             hiddenInput.focus(); // shows native keyboard on mobile
+            cell.classList.remove("first-cell"); // remove highlight
+            tooltip.classList.remove("show"); // hide tooltip
           });
         }
 
